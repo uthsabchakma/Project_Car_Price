@@ -9,6 +9,14 @@ Predict a used car's selling price so Chaky's company can price its cars, and se
 
 **Result:** Random Forest was the best of 7 models (5-fold CV). Test R² = 0.943 (log price), about 14% average error. `year` and `max_power` matter most.
 
+## A2: Linear Regression from scratch + MLflow
+- `A2/A2.ipynb`: the LinearRegression class (r2, Xavier init, momentum, feature importance), the experiment, and the report
+- `A2/app_a2.py`: two-page web app (old A1 model + new A2 model)
+- `A2/mlflow.db`: all runs. View them with `cd A2 && mlflow ui --backend-store-uri sqlite:///mlflow.db`
+
+144 combinations (Normal/Lasso/Ridge/Polynomial × momentum × batch/mini/sto × zeros/xavier × 3 learning rates), 3-fold CV.
+**Best:** Polynomial, mini-batch, zeros init, lr 0.01, no momentum. Test R² = 0.913 (log price).
+
 ### Run
 ```bash
 docker compose up --build    # then open http://localhost:8050
