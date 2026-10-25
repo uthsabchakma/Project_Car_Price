@@ -1,0 +1,19 @@
+services:
+  web:
+    image: utsb/st127120-car-price:latest
+    restart: unless-stopped
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=web
+      - traefik.http.routers.web-st127120.rule=Host(`web-st127120.ml.brain.cs.ait.ac.th`)
+      - traefik.http.routers.web-st127120.entrypoints=websecure
+      - traefik.http.routers.web-st127120.tls=true
+      - traefik.http.routers.web-st127120.tls.certresolver=letsencrypt
+      - traefik.http.services.web-st127120.loadbalancer.server.port=8050
+    networks:
+      - default
+      - web
+networks:
+  default:
+  web:
+    external: true

@@ -1,0 +1,64 @@
+name: CI-CD
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  test:                                   # 1. unit tests on every push
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - run: pip install -r A1/requirements.txt pytest
+      - run: pytest -v A3/tests
+
+  build:                                  # 2. only if tests pass, only on main
+    needs: test
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            utsb/st127120-car-price:latest
+            utsb/st127120-car-price:${{ github.sha }}
+
+  deploy:                                 # 3. only if the build succeeded
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Copy compose file to ml-brain
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ml.brain.cs.ait.ac.th
+          username: st127120
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          proxy_host: bazooka.cs.ait.ac.th
+          proxy_username: st127120
+          proxy_password: ${{ secrets.BAZOOKA_PASSWORD }}
+          source: docker-compose.server.yaml
+          target: car-price
+      - name: Pull new image and restart
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ml.brain.cs.ait.ac.th
+          username: st127120
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          proxy_host: bazooka.cs.ait.ac.th
+          proxy_username: st127120
+          proxy_password: ${{ secrets.BAZOOKA_PASSWORD }}
+          script: |
+            cd ~/car-price
+            docker compose -f docker-compose.server.yaml pull
+            docker compose -f docker-compose.yaml down || true
+            docker compose -f docker-compose.server.yaml up -d
