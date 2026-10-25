@@ -2,9 +2,8 @@ name: CI-CD
 on:
   push:
   workflow_dispatch:
-
 jobs:
-  test:                                   # 1. unit tests on every push
+  test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -13,8 +12,7 @@ jobs:
           python-version: '3.13'
       - run: pip install -r A1/requirements.txt pytest
       - run: pytest -v A3/tests
-
-  build:                                  # 2. only if tests pass, only on main
+  build:
     needs: test
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
@@ -31,34 +29,30 @@ jobs:
           tags: |
             utsb/st127120-car-price:latest
             utsb/st127120-car-price:${{ github.sha }}
-
-  deploy:                                 # 3. only if the build succeeded
+  deploy:
     needs: build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Copy compose file to ml-brain
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ml.brain.cs.ait.ac.th
-          username: st127120
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          proxy_host: bazooka.cs.ait.ac.th
-          proxy_username: st127120
-          proxy_password: ${{ secrets.BAZOOKA_PASSWORD }}
-          source: docker-compose.server.yaml
-          target: car-price
-      - name: Pull new image and restart
-        uses: appleboy/ssh-action@v1.2.0
-        with:
-          host: ml.brain.cs.ait.ac.th
-          username: st127120
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          proxy_host: bazooka.cs.ait.ac.th
-          proxy_username: st127120
-          proxy_password: ${{ secrets.BAZOOKA_PASSWORD }}
-          script: |
-            cd ~/car-price
-            docker compose -f docker-compose.server.yaml pull
-            docker compose -f docker-compose.yaml down || true
-            docker compose -f docker-compose.server.yaml up -d
+      - name: Install sshpass and the SSH key
+        env:
+          SSH_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq sshpass
+          mkdir -p ~/.ssh
+          echo "$SSH_KEY" > ~/.ssh/id_deploy
+          chmod 600 ~/.ssh/id_deploy
+      - name: Copy compose file to ml-brain and restart the app
+        env:
+          SSHPASS: ${{ secrets.BAZOOKA_PASSWORD }}
+        run: |
+          NOCHECK="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+          JUMP="ProxyCommand=sshpass -e ssh $NOCHECK -o PubkeyAuthentication=no -W %h:%p st127120@bazooka.cs.ait.ac.th"
+          SERVER=st127120@ml.brain.cs.ait.ac.th
+          scp $NOCHECK -i $HOME/.ssh/id_deploy -o "$JUMP" docker-compose.server.yaml $SERVER:car-price/
+          ssh $NOCHECK -i $HOME/.ssh/id_deploy -o "$JUMP" $SERVER '
+            cd ~/car-price &&
+            docker compose -f docker-compose.server.yaml pull &&
+            (docker compose -f docker-compose.yaml down || true) &&
+            docker compose -f docker-compose.server.yaml up -d &&
+            docker ps --filter name=car-price'
