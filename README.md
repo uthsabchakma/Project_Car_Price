@@ -17,6 +17,14 @@ Predict a used car's selling price so Chaky's company can price its cars, and se
 144 combinations (Normal/Lasso/Ridge/Polynomial × momentum × batch/mini/sto × zeros/xavier × 3 learning rates), 3-fold CV.
 **Best:** Polynomial, mini-batch, zeros init, lr 0.01, no momentum. Test R² = 0.913 (log price).
 
+## A3: Classification (Logistic Regression from scratch)
+- `A3/A3.ipynb`: price split into 4 classes; LogisticRegression with accuracy, precision, recall, F1 (per class, macro, weighted) checked against sklearn, and a Ridge penalty
+- `A3/app_a3.py`: final three-page web app (A1, A2, A3 models)
+- `A3/tests/`: unit tests run by GitHub Actions
+
+18 MLflow runs (method × learning rate × penalty). **Best:** batch, lr 0.1, no penalty.
+Test accuracy 0.760, macro F1 0.761. Registered as `st127120-a3-model` (Staging).
+
 ### Run
 ```bash
 docker compose up --build    # then open http://localhost:8050

@@ -1,3 +1,5 @@
 __pycache__/
 .ipynb_checkpoints/
 mlruns/
+.pytest_cache/
+A3/mlflow.db
