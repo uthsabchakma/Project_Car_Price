@@ -1,0 +1,7 @@
+services:
+  web:
+    build: .                  # build the image from the Dockerfile in this folder
+    image: car-price-app:a1
+    ports:
+      - "8050:8050"           # laptop port : container port
+    restart: unless-stopped
