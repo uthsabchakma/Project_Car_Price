@@ -125,7 +125,7 @@ server = app.server  # for gunicorn
 
 navbar = dbc.NavbarSimple(
     [dbc.NavItem(dbc.NavLink(title, href=path, active='exact')) for path, (title, _) in PAGES.items() if path != '/'],
-    brand='Car Price', brand_href='/', color='dark', dark=True)
+    brand='Car Price Predictor · st127120', brand_href='/', color='dark', dark=True)
 
 # every page is in the layout from the start (hidden when not active), so all callbacks are valid
 app.layout = html.Div([
